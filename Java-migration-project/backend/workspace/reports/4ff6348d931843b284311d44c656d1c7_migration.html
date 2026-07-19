@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Migration Change Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#1a56db;--primary-dark:#1e429f;
+  --bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;
+  --text:#111827;--muted:#6b7280;
+  --high:#dc3545;--medium:#fd7e14;--low:#198754;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.1);
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.header{
+  position:sticky;top:0;z-index:100;
+  background:var(--primary-dark);color:#fff;
+  padding:.75rem 2rem;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+.header h1{font-size:1.1rem;font-weight:700}
+.page{max-width:1100px;margin:2rem auto;padding:0 1rem 3rem}
+
+/* Banner */
+.banner{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.5rem 2rem;margin-bottom:1.5rem;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:1.25rem;
+  border-left:5px solid #198754;
+}
+.banner-icon{font-size:2.5rem;line-height:1}
+.banner-title{font-size:1.3rem;font-weight:700}
+.banner-sub{font-size:.875rem;color:var(--muted);margin-top:.2rem}
+
+/* Summary cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;box-shadow:var(--shadow)}
+.card-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.3rem}
+.card-value{font-size:1.5rem;font-weight:700;line-height:1}
+.card-sub{font-size:.75rem;color:var(--muted);margin-top:.25rem}
+.card.green{border-left:4px solid var(--low)}
+.card.blue{border-left:4px solid var(--primary)}
+.card.orange{border-left:4px solid var(--medium)}
+
+/* Section */
+.section{margin-bottom:1.25rem}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.85rem 1.25rem;cursor:pointer;user-select:none;box-shadow:var(--shadow);
+}
+.section-header:hover{background:#f9fafb}
+.section-header h2{font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:.6rem}
+.section-num{
+  background:var(--primary);color:#fff;border-radius:50%;
+  width:1.5rem;height:1.5rem;display:inline-flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;flex-shrink:0;
+}
+.chevron{transition:transform .25s;font-size:.85rem;color:var(--muted)}
+.section-body{
+  background:var(--surface);border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);
+  padding:1.25rem;overflow:hidden;
+  max-height:9000px;transition:max-height .35s ease,padding .35s ease;
+}
+.section-body.collapsed{max-height:0;padding-top:0;padding-bottom:0}
+.section-header.collapsed .chevron{transform:rotate(-90deg)}
+
+/* Steps */
+.step-row{display:flex;align-items:flex-start;gap:1rem;padding:.75rem 0;border-bottom:1px solid #f3f4f6}
+.step-row:last-child{border-bottom:none}
+.step-icon{font-size:1.2rem;flex-shrink:0;margin-top:.05rem}
+.step-name{font-weight:600;font-size:.875rem}
+.step-detail{font-size:.8rem;color:var(--muted);margin-top:.15rem}
+.badge{display:inline-flex;align-items:center;padding:.15rem .55rem;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase;margin-left:auto;flex-shrink:0}
+.badge-success{background:#f0fff4;color:#198754;border:1px solid #bbf7d0}
+.badge-skipped{background:#f9fafb;color:#6b7280;border:1px solid #e5e7eb}
+.badge-failed{background:#fff5f5;color:#dc3545;border:1px solid #fecaca}
+.badge-mc{background:#eff6ff;color:var(--primary);border:1px solid #bfdbfe;font-size:.65rem}
+.badge-kb{background:#fefce8;color:#854d0e;border:1px solid #fef08a;font-size:.65rem}
+
+/* Tables */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead tr{background:#f9fafb}
+th{padding:.6rem .9rem;text-align:left;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:.55rem .9rem;border-bottom:1px solid #f3f4f6;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+
+/* File change blocks */
+.file-block{margin-bottom:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.file-header{
+  background:#f9fafb;padding:.6rem 1rem;
+  font-family:monospace;font-size:.8rem;font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.file-changes{padding:.5rem 0}
+.change-row{display:flex;align-items:flex-start;gap:.75rem;padding:.4rem 1rem}
+.change-cat{font-weight:600;font-size:.8rem;min-width:220px;flex-shrink:0;color:var(--primary)}
+.change-desc{font-size:.78rem;color:var(--muted);flex:1}
+.change-count{font-size:.75rem;font-weight:700;color:var(--low);flex-shrink:0}
+
+/* KV */
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:.1rem 2rem}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
+.kv:last-child{border-bottom:none}
+.kv-label{color:var(--muted)}
+.kv-value{font-weight:500;font-size:.82rem;word-break:break-all;text-align:right;max-width:65%}
+
+/* Actions */
+.actions{display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.25rem;border-radius:8px;font-size:.875rem;font-weight:600;text-decoration:none;cursor:pointer;border:none}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-outline{background:var(--surface);color:var(--primary);border:1px solid var(--primary)}
+.btn-outline:hover{background:#eff6ff}
+.btn-green{background:#16a34a;color:#fff}
+
+.empty-msg{color:var(--muted);font-size:.875rem;padding:.5rem 0}
+.arrow{color:var(--medium);font-weight:700;margin:0 .3rem}
+
+@media(max-width:640px){
+  .kv-grid{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr 1fr}
+  .banner{flex-direction:column;gap:.75rem}
+  .change-cat{min-width:140px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1>☕ Java Migration Assistant</h1>
+  <span style="font-size:.8rem;opacity:.8">Migration Change Report</span>
+</header>
+
+<div class="page">
+
+  <!-- Banner -->
+  <div class="banner">
+    <div class="banner-icon">✅</div>
+    <div>
+      <div class="banner-title">Migration Completed</div>
+      <div class="banner-sub">
+        Project: 4ff6348d931843b284311d44c656d1c7
+        &nbsp;·&nbsp; Dependency resolution: 2 from Maven Central, 1 from knowledge base
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="cards">
+  <div class="card green"><div class="card-label">Files Modified</div><div class="card-value">0</div><div class="card-sub">Java source files</div></div>
+  <div class="card blue"><div class="card-label">Source Changes</div><div class="card-value">0</div><div class="card-sub">Total replacements</div></div>
+  <div class="card orange"><div class="card-label">Deps Updated</div><div class="card-value">3</div><div class="card-sub">pom.xml changes</div></div>
+  <div class="card blue"><div class="card-label">Maven Central</div><div class="card-value">2</div><div class="card-sub">Live resolved</div></div>
+  <div class="card orange"><div class="card-label">Knowledge Base</div><div class="card-value">1</div><div class="card-sub">Fallback resolved</div></div>
+  <div class="card green"><div class="card-label">Status</div><div class="card-value">COMPLETED</div><div class="card-sub">Not Executed</div></div>
+</div>
+
+  <!-- Section 1: Steps -->
+  <div class="section"><div class="section-header"><h2><span class="section-num">1</span>Migration Steps</h2><span class="chevron">▾</span></div><div class="section-body"><div style="padding:.25rem 0"><div class="step-row"><span class="step-icon">✅</span><div style="flex:1"><div class="step-name">Backup Created</div><div class="step-detail">Full project copied to C:\Java-migration-project\backend\workspace\backups\4ff6348d931843b284311d44c656d1c7</div></div><span class="badge badge-success">SUCCESS</span></div><div class="step-row"><span class="step-icon">✅</span><div style="flex:1"><div class="step-name">Java Version Updated</div><div class="step-detail">Java set to 21</div></div><span class="badge badge-success">SUCCESS</span></div><div class="step-row"><span class="step-icon">⏭️</span><div style="flex:1"><div class="step-name">Spring Boot Updated</div><div class="step-detail">Spring Boot parent not found or already up to date</div></div><span class="badge badge-skipped">SKIPPED</span></div><div class="step-row"><span class="step-icon">✅</span><div style="flex:1"><div class="step-name">Plugins Updated</div><div class="step-detail">maven-compiler-plugin → 3.13.0, maven-surefire-plugin → 3.6.0-M1</div></div><span class="badge badge-success">SUCCESS</span></div><div class="step-row"><span class="step-icon">✅</span><div style="flex:1"><div class="step-name">Dependencies Updated</div><div class="step-detail">1 dependencies updated via dynamic resolution</div></div><span class="badge badge-success">SUCCESS</span></div><div class="step-row"><span class="step-icon">⏭️</span><div style="flex:1"><div class="step-name">Java Source Files Refactored</div><div class="step-detail">No source files required changes</div></div><span class="badge badge-skipped">SKIPPED</span></div></div></div></div>
+
+  <!-- Section 2: Dependency Changes -->
+  <div class="section"><div class="section-header"><h2><span class="section-num">2</span>Dependency Changes <span style='font-weight:400;color:var(--muted);font-size:.85rem;margin-left:.5rem'>3 updated</span></h2><span class="chevron">▾</span></div><div class="section-body"><div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>Group ID</th><th>Artifact ID</th>
+    <th>Old Version</th><th>New Version</th><th>Resolution</th>
+  </tr></thead>
+  <tbody><tr><td style='color:var(--muted);font-size:.78rem'>org.apache.maven.plugins</td><td><strong>maven-compiler-plugin</strong></td><td>3.11.0</td><td><strong style='color:var(--low)'>3.13.0</strong></td><td><span class="badge badge-kb">Knowledge Base</span></td></tr><tr><td style='color:var(--muted);font-size:.78rem'>org.apache.maven.plugins</td><td><strong>maven-surefire-plugin</strong></td><td>3.1.2</td><td><strong style='color:var(--low)'>3.6.0-M1</strong></td><td><span class="badge badge-mc">Maven Central</span></td></tr><tr><td style='color:var(--muted);font-size:.78rem'>org.codehaus.mojo</td><td><strong>exec-maven-plugin</strong></td><td>3.1.0</td><td><strong style='color:var(--low)'>3.5.0</strong></td><td><span class="badge badge-mc">Maven Central</span></td></tr></tbody>
+</table>
+</div></div></div>
+
+  <!-- Section 3: Source Code Changes by File -->
+  <div class="section"><div class="section-header"><h2><span class="section-num">3</span>Source Code Changes — by File <span style='font-weight:400;color:var(--muted);font-size:.85rem;margin-left:.5rem'>0 file(s) · 0 change(s)</span></h2><span class="chevron">▾</span></div><div class="section-body"><p class="empty-msg">No Java source files required changes.</p></div></div>
+
+  <!-- Section 4: Source Changes by Category -->
+  <div class="section"><div class="section-header"><h2><span class="section-num">4</span>Source Code Changes — by Category</h2><span class="chevron">▾</span></div><div class="section-body"><p class="empty-msg">No source code changes were applied.</p></div></div>
+
+  <!-- Section 5: Details -->
+  <div class="section"><div class="section-header"><h2><span class="section-num">5</span>Details</h2><span class="chevron">▾</span></div><div class="section-body">
+<div class="kv-grid">
+  <div>
+    <div class="kv"><span class="kv-label">Project ID</span><span class="kv-value">4ff6348d931843b284311d44c656d1c7</span></div>
+    <div class="kv"><span class="kv-label">Overall Status</span><span class="kv-value">COMPLETED</span></div>
+    <div class="kv"><span class="kv-label">Build Status</span><span class="kv-value">Not Executed</span></div>
+    <div class="kv"><span class="kv-label">Files Modified</span><span class="kv-value">0</span></div>
+  </div>
+  <div>
+    <div class="kv"><span class="kv-label">Backup Location</span><span class="kv-value">C:\Java-migration-project\backend\workspace\backups\4ff6348d931843b284311d44c656d1c7</span></div>
+    <div class="kv"><span class="kv-label">Updated pom.xml</span><span class="kv-value">C:\Java-migration-project\backend\workspace\4ff6348d931843b284311d44c656d1c7\Employee-Attandance\pom.xml</span></div>
+    <div class="kv"><span class="kv-label">Total Source Changes</span><span class="kv-value">0</span></div>
+    <div class="kv"><span class="kv-label">Dependencies Updated</span><span class="kv-value">3</span></div>
+  </div>
+</div>
+</div></div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <a class="btn btn-primary" href="/assessment/4ff6348d931843b284311d44c656d1c7/report">📋 Assessment Report</a>
+    <a class="btn btn-outline" href="/assessment/4ff6348d931843b284311d44c656d1c7">{} JSON Report</a>
+    <a href="#" onclick="startBuild(event,'4ff6348d931843b284311d44c656d1c7')" class="btn btn-green">⚡ Run Build Verification</a>
+  </div>
+
+</div>
+
+<script>
+document.querySelectorAll('.section-header').forEach(function(h){
+  h.addEventListener('click',function(){
+    var b=this.nextElementSibling;
+    var c=b.classList.toggle('collapsed');
+    this.classList.toggle('collapsed',c);
+  });
+});
+
+function startBuild(event,projectId){
+  event.preventDefault();
+  var btn=event.currentTarget;
+  btn.textContent='⏳ Building...';
+  btn.style.pointerEvents='none';btn.style.opacity='0.7';
+  fetch('/build/'+projectId+'/start',{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(){window.location.href='/build/'+projectId+'/report';})
+    .catch(function(e){
+      btn.textContent='❌ Failed';
+      btn.style.background='#dc3545';
+      btn.style.pointerEvents='auto';btn.style.opacity='1';
+      alert('Build failed to start: '+e);
+    });
+}
+</script>
+</body>
+</html>

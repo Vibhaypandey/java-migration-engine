@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Migration Report — employee-attendance</title>
+<style>
+/* ── Reset & base ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#1a56db;--primary-dark:#1e429f;--surface:#fff;
+  --bg:#f3f4f6;--border:#e5e7eb;--text:#111827;--muted:#6b7280;
+  --high:#dc3545;--medium:#fd7e14;--low:#198754;
+  --high-bg:#fff5f5;--medium-bg:#fff8f0;--low-bg:#f0fff4;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+
+/* ── Sticky header ── */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:var(--primary-dark);color:#fff;
+  padding:.75rem 2rem;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+.site-header h1{font-size:1.1rem;font-weight:700;letter-spacing:.01em}
+.site-header .meta{font-size:.8rem;opacity:.8}
+.header-badge{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;padding:.25rem .75rem;font-size:.78rem;font-weight:600;
+}
+
+/* ── Layout ── */
+.page{max-width:1200px;margin:0 auto;padding:1.5rem 1rem 3rem}
+
+/* ── Summary cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.25rem;box-shadow:var(--shadow);
+}
+.card-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.35rem}
+.card-value{font-size:1.6rem;font-weight:700;line-height:1}
+.card-sub{font-size:.78rem;color:var(--muted);margin-top:.3rem}
+.card.risk-high{border-left:4px solid var(--high)}
+.card.risk-medium{border-left:4px solid var(--medium)}
+.card.risk-low{border-left:4px solid var(--low)}
+
+/* ── Section ── */
+.section{margin-bottom:1.25rem}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.85rem 1.25rem;cursor:pointer;user-select:none;
+  box-shadow:var(--shadow);transition:background .15s;
+}
+.section-header:hover{background:#f9fafb}
+.section-header h2{font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:.6rem}
+.section-num{
+  background:var(--primary);color:#fff;border-radius:50%;
+  width:1.5rem;height:1.5rem;display:inline-flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;flex-shrink:0;
+}
+.chevron{transition:transform .25s;font-size:.85rem;color:var(--muted)}
+.section-body{
+  background:var(--surface);border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);
+  padding:1.25rem;overflow:hidden;
+  max-height:5000px;transition:max-height .35s ease,padding .35s ease;
+}
+.section-body.collapsed{max-height:0;padding-top:0;padding-bottom:0}
+.section-header.collapsed .chevron{transform:rotate(-90deg)}
+
+/* ── KV rows ── */
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:.1rem 2rem}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid #f3f4f6;font-size:.875rem}
+.kv:last-child{border-bottom:none}
+.kv-label{color:var(--muted);flex-shrink:0;margin-right:1rem}
+.kv-value{font-weight:500;text-align:right}
+
+/* ── Badges ── */
+.badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.2rem .6rem;border-radius:20px;font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.badge-high{background:var(--high-bg);color:var(--high);border:1px solid #fecaca}
+.badge-medium{background:var(--medium-bg);color:var(--medium);border:1px solid #fed7aa}
+.badge-low{background:var(--low-bg);color:var(--low);border:1px solid #bbf7d0}
+.badge-info{background:#eff6ff;color:var(--primary);border:1px solid #bfdbfe}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead tr{background:#f9fafb}
+th{padding:.6rem .9rem;text-align:left;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:.55rem .9rem;border-bottom:1px solid #f3f4f6;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:2rem;margin-top:.5rem}
+.timeline::before{content:'';position:absolute;left:.55rem;top:.5rem;bottom:.5rem;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:1.25rem}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot{
+  position:absolute;left:-1.55rem;top:.2rem;
+  width:.9rem;height:.9rem;border-radius:50%;border:2px solid var(--surface);
+  background:var(--primary);
+}
+.tl-dot.done{background:var(--low)}
+.tl-dot.warn{background:var(--medium)}
+.tl-dot.danger{background:var(--high)}
+.tl-title{font-weight:600;font-size:.875rem}
+.tl-desc{font-size:.8rem;color:var(--muted);margin-top:.15rem}
+
+/* ── Misc ── */
+ul.check-list{list-style:none;padding:0}
+ul.check-list li{padding:.3rem 0;font-size:.875rem;display:flex;align-items:flex-start;gap:.5rem}
+ul.check-list li::before{content:'›';color:var(--primary);font-weight:700;flex-shrink:0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:1rem}
+.warn-box{background:var(--medium-bg);border:1px solid #fed7aa;border-radius:8px;padding:1rem}
+.danger-box{background:var(--high-bg);border:1px solid #fecaca;border-radius:8px;padding:1rem}
+.success-box{background:var(--low-bg);border:1px solid #bbf7d0;border-radius:8px;padding:1rem}
+.box-title{font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+.docker-icon{font-size:1.5rem}
+@media(max-width:640px){
+  .two-col{grid-template-columns:1fr}
+  .kv-grid{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr 1fr}
+  .site-header .meta{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Sticky Header ── -->
+<header class="site-header">
+  <h1>☕ Java Migration Assistant</h1>
+  <span class="meta">Migration Assessment Report</span>
+  <div style="display:flex;align-items:center;gap:.75rem">
+    <span class="header-badge">employee-attendance</span>
+    <a href="#" onclick="startMigration(event, '4ff6348d931843b284311d44c656d1c7')" style="
+      background:#16a34a;color:#fff;border:none;border-radius:8px;
+      padding:.4rem 1rem;font-size:.8rem;font-weight:700;cursor:pointer;
+      text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;
+    ">🚀 Start Migration</a>
+  </div>
+</header>
+
+<div class="page">
+
+<!-- ── Summary Cards ── -->
+<div class="cards">
+  <div class="card risk-high"><div class="card-label">Java Version</div><div class="card-value">11</div><div class="card-sub">Target: Java 21</div></div>
+  <div class="card risk-high"><div class="card-label">Spring Boot</div><div class="card-value">N/A</div><div class="card-sub">Target: 3.3.4</div></div>
+  <div class="card risk-medium"><div class="card-label">Dependencies</div><div class="card-value">1</div><div class="card-sub">1 need upgrade</div></div>
+  <div class="card risk-low"><div class="card-label">Files to Change</div><div class="card-value">0</div><div class="card-sub">of 17 Java files</div></div>
+  <div class="card risk-medium"><div class="card-label">Complexity</div><div class="card-value">Medium</div><div class="card-sub">Confidence: Medium</div></div>
+  <div class="card risk-low"><div class="card-label">Build Tool</div><div class="card-value">Maven</div><div class="card-sub">jar</div></div>
+</div>
+
+<!-- ── Section 1: Project Info ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">1</span>Project Information</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="two-col">
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Project Name</span><span class="kv-value">employee-attendance</span></div>
+      <div class="kv"><span class="kv-label">Build Tool</span><span class="kv-value">Maven</span></div>
+      <div class="kv"><span class="kv-label">Packaging</span><span class="kv-value">jar</span></div>
+      <div class="kv"><span class="kv-label">Java Version</span><span class="kv-value">11</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Spring Boot</span><span class="kv-value">Not detected</span></div>
+      <div class="kv"><span class="kv-label">Spring Framework</span><span class="kv-value">Not detected</span></div>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<!-- ── Section 2: Dependency Analysis ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">2</span>Dependency Analysis <span style='font-weight:400;color:var(--muted);font-size:.85rem;margin-left:.5rem'>1 total &nbsp;·&nbsp; 1 require upgrade</span></h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>Group ID</th><th>Artifact ID</th><th>Current</th>
+    <th>Recommended</th><th>Priority</th><th>Notes</th>
+  </tr></thead>
+  <tbody><tr><td style='color:var(--muted);font-size:.78rem'>org.junit.jupiter</td><td><strong>junit-jupiter</strong></td><td>5.10.0</td><td>5.10.3</td><td><span class="badge badge-low">🟢 Low</span></td><td style='font-size:.8rem'>Latest JUnit 5; compatible with Java 21</td></tr></tbody>
+</table>
+</div>
+</div></div>
+
+<!-- ── Section 3: Java Migration ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">3</span>Java Migration Analysis</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="two-col">
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Current Version</span><span class="kv-value">11</span></div>
+      <div class="kv"><span class="kv-label">Target Version</span><span class="kv-value">Java 21</span></div>
+      <div class="kv"><span class="kv-label">Migration Supported</span><span class="kv-value">✅ Yes</span></div>
+      <div class="kv"><span class="kv-label">Risk Level</span><span class="kv-value"><span class="badge badge-high">🔴 High</span></span></div>
+    </div>
+    <div style="margin-top:1.25rem">
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot warn"></div><div class="tl-title">Java 11</div><div class="tl-desc">Current version</div></div>
+        <div class="tl-item"><div class="tl-dot "></div><div class="tl-title">Java 17</div><div class="tl-desc">LTS — Strong encapsulation, records, sealed classes</div></div>
+        <div class="tl-item"><div class="tl-dot "></div><div class="tl-title">Java 21</div><div class="tl-desc">LTS Target — Virtual threads, pattern matching, sequenced collections</div></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="danger-box">
+      <div class="box-title">Migration Notes</div>
+      <ul class="check-list"><li>Migrating from Java 11 to 21 is a multi-version jump.</li><li>Strong encapsulation of JDK internals enforced from Java 17+.</li><li>Sealed classes, records, and pattern matching are available from Java 17+.</li><li>javax.* packages replaced by jakarta.* in Jakarta EE 9+.</li></ul>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<!-- ── Section 4: Spring Boot Migration ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">4</span>Spring Boot Migration</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="two-col">
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Current Version</span><span class="kv-value">Not detected</span></div>
+      <div class="kv"><span class="kv-label">Recommended</span><span class="kv-value">3.3.4</span></div>
+      <div class="kv"><span class="kv-label">Upgrade Required</span><span class="kv-value"><span class="badge badge-high">Yes</span></span></div>
+    </div>
+    <div style="margin-top:1.25rem">
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot warn"></div><div class="tl-title">Unknown</div><div class="tl-desc">Current Spring Boot</div></div>
+        <div class="tl-item"><div class="tl-dot "></div><div class="tl-title">Spring Boot 3.x</div><div class="tl-desc">Jakarta EE 10, Spring Security 6, Hibernate 6</div></div>
+        <div class="tl-item"><div class="tl-dot "></div><div class="tl-title">3.3.4</div><div class="tl-desc">Recommended stable target</div></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="warn-box">
+      <div class="box-title">⚠ Breaking Changes</div>
+      <ul class="check-list"><li>javax.* → jakarta.* namespace migration required across all source files.</li><li>WebSecurityConfigurerAdapter removed; use SecurityFilterChain @Bean instead.</li><li>Spring MVC and WebFlux: HttpMethod is now an enum — update comparisons.</li><li>spring.factories auto-configuration replaced by AutoConfiguration.imports.</li><li>Actuator endpoints restructured; review custom endpoint security.</li><li>Hibernate 6 included: SessionFactory and Criteria API have breaking changes.</li><li>spring-boot-starter-validation uses jakarta.validation — update all @Valid imports.</li></ul>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<!-- ── Section 5: Code Refactoring ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">5</span>Code Refactoring Analysis</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="cards" style="margin-bottom:1.25rem">
+  <div class="card" style="padding:.75rem 1rem"><div class="card-label">Java Files</div><div class="card-value" style="font-size:1.2rem">17</div></div>
+  <div class="card" style="padding:.75rem 1rem"><div class="card-label">Files to Change</div><div class="card-value" style="font-size:1.2rem">0</div></div>
+  <div class="card" style="padding:.75rem 1rem"><div class="card-label">Imports Affected</div><div class="card-value" style="font-size:1.2rem">73</div></div>
+  <div class="card" style="padding:.75rem 1rem"><div class="card-label">Effort</div><div class="card-value" style="font-size:1.2rem">Low</div></div>
+  <div class="card" style="padding:.75rem 1rem"><div class="card-label">Overall Risk</div><div class="card-value" style="font-size:1.2rem">Low</div></div>
+</div>
+<p style='color:var(--muted);font-size:.875rem'>No refactoring signals detected in source files.</p>
+</div></div>
+
+<!-- ── Section 6: Build Configuration ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">6</span>Build Configuration</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="two-col">
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Build Tool</span><span class="kv-value">Maven</span></div>
+      <div class="kv"><span class="kv-label">Source Compatibility</span><span class="kv-value">11</span></div>
+      <div class="kv"><span class="kv-label">Target Compatibility</span><span class="kv-value">11</span></div>
+      <div class="kv"><span class="kv-label">Encoding</span><span class="kv-value">UTF-8</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Compiler Plugin</span><span class="kv-value">3.11.0 <span style="color:var(--medium)">→</span> <strong>3.13.0</strong></span></div>
+      <div class="kv"><span class="kv-label">Surefire Plugin</span><span class="kv-value">3.1.2 <span style="color:var(--medium)">→</span> <strong>3.3.1</strong></span></div>
+      
+    </div>
+  </div>
+</div>
+</div></div>
+
+<!-- ── Section 7: Database Analysis ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">7</span>Database Analysis</h2><span class="chevron">▾</span></div><div class="section-body ">
+<p style='color:var(--muted);font-size:.875rem'>No database dependencies detected in the build file.</p>
+</div></div>
+
+<!-- ── Section 8: Docker Readiness ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">8</span>Docker Readiness</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="two-col">
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Dockerfile</span><span class="kv-value">❌ Not found</span></div>
+      <div class="kv"><span class="kv-label">Docker Compose</span><span class="kv-value">❌ Not found</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="info-box">
+      <div class="box-title">Recommendations</div>
+      <ul class="check-list"><li>Create a Dockerfile using eclipse-temurin:21-jre-alpine as the base image.</li><li>Use multi-stage build: builder stage compiles, runtime stage runs the JAR.</li><li>Add docker-compose.yml to orchestrate the app with its database locally.</li></ul>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<!-- ── Section 9: Migration Summary ── -->
+<div class="section"><div class="section-header"><h2><span class="section-num">9</span>Migration Summary</h2><span class="chevron">▾</span></div><div class="section-body ">
+<div class="two-col" style="margin-bottom:1.25rem">
+  <div>
+    <div class="kv-grid">
+      <div class="kv"><span class="kv-label">Java</span><span class="kv-value">11 &rarr; 21</span></div>
+      <div class="kv"><span class="kv-label">Spring Boot</span><span class="kv-value">N/A &rarr; 3.3.4</span></div>
+      <div class="kv"><span class="kv-label">Dependencies to Upgrade</span><span class="kv-value">1</span></div>
+      <div class="kv"><span class="kv-label">Files Requiring Changes</span><span class="kv-value">0</span></div>
+      <div class="kv"><span class="kv-label">Migration Complexity</span><span class="kv-value"><span class="badge badge-medium">🟡 Medium</span></span></div>
+      <div class="kv"><span class="kv-label">Migration Confidence</span><span class="kv-value"><span class="badge badge-medium">🟡 Medium</span></span></div>
+    </div>
+  </div>
+  <div>
+    <div class="warn-box">
+      <div class="box-title">Top Risks</div>
+      <ul class="check-list"><li>Large Java version gap: 11 → 21</li></ul>
+    </div>
+  </div>
+</div>
+</div></div>
+
+</div><!-- /page -->
+
+<script>
+// Collapsible sections
+document.querySelectorAll('.section-header').forEach(function(header) {
+  header.addEventListener('click', function() {
+    var body = this.nextElementSibling;
+    var isCollapsed = body.classList.toggle('collapsed');
+    this.classList.toggle('collapsed', isCollapsed);
+  });
+});
+
+// Start Migration: POST /migration/PROJECT_ID/start then redirect to summary
+function startMigration(event, projectId) {
+  event.preventDefault();
+  var btn = event.currentTarget;
+  btn.textContent = '⏳ Running...';
+  btn.style.pointerEvents = 'none';
+  btn.style.opacity = '0.7';
+
+  fetch('/migration/' + projectId + '/start', { method: 'POST' })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      window.location.href = '/migration/' + projectId + '/summary';
+    })
+    .catch(function(err) {
+      btn.textContent = '❌ Failed';
+      btn.style.background = '#dc3545';
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+      alert('Migration failed: ' + err);
+    });
+}
+</script>
+</body>
+</html>
