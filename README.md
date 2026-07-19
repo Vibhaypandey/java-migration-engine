@@ -91,5 +91,4 @@ No manual research. No missed imports. No forgotten dependency upgrades. Every c
 
 ---
 
-## 🏗️ Architecture
 
